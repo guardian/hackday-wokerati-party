@@ -551,7 +551,7 @@ export const state: State = {
 	currentRoom: rooms.find((room) => room.name === "Kitchen") || rooms[0],
 	time: 0,
   intro: [
-    "Welcome to Tofu-Eating Wokerati Dinner Party!",
+    "Tofu-Eating wokerati dinner party",
     "Your date is coming for dinner in three hours, and you have decided, perhaps too ambitiously, to cook them an elaborate Ottolenghi recipe from the Guardian archives.",
     "You have a kitchen, but only some of the ingredients. You have a few hours to prepare.",
     "You can use commands like 'look', 'take', 'put', 'eat', 'turn on', 'turn off', 'go', 'inventory', 'time', and 'help'.",

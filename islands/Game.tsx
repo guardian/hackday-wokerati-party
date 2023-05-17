@@ -42,15 +42,25 @@ export default function Game() {
 					className="font-mono flex flex-col w-full h-full overflow-y-auto px-4 py-2 mt-2 border border-gray-300 rounded-lg bg-black"
 					ref={outputBoxRef}
 				>
-					{output.value.map((line, index) => (
-						<p
-							className={`
-              ${line.player ? "text-white" : "text-gray-300"}
-            `}
-						>
-							{`${line.player ? "> " : ""}${line.text}`}
-						</p>
-					))}
+					{output.value.map((line, index) => {
+						if (index === 0) {
+							return (
+								<p
+									className={"text-2xl font-bold tracking-tight text-gray-300"}
+								>{`${line.text}`}</p>
+							);
+						}
+
+						return (
+							<p
+								className={`
+							${line.player ? "text-white" : "text-gray-300"}
+						`}
+							>
+								{`${line.player ? "> " : ""}${line.text}`}
+							</p>
+						);
+					})}
 				</div>
 			</div>
 			<Form onSubmit={onSubmit} />
