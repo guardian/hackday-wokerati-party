@@ -44,7 +44,7 @@ export default function Game() {
 				if (index === 0) {
 					return (
 						<p
-							className={"text-2xl font-bold tracking-tight text-gray-300"}
+							className={"text-2xl font-bold tracking-tight text-gray-300 py-2"}
 						>{`${line.text}`}</p>
 					);
 				}
@@ -52,7 +52,7 @@ export default function Game() {
 				return (
 					<p
 						className={`
-							${line.player ? "text-white" : "text-gray-300"}
+							${line.player ? "text-white" : "text-gray-300"} py-2	
 						`}
 					>
 						{`${line.player ? "> " : ""}${line.text}`}
