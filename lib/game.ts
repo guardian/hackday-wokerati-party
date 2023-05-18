@@ -22,6 +22,7 @@ interface Thing {
 	cookingTimes: Partial<Record<CookedState, number>>;
 	cookedState: CookedState;
 	cookedFor: number;
+	purchaseable: boolean;
 }
 
 interface Property {
@@ -55,7 +56,7 @@ class Room {
 		name: string,
 		description: string,
 		exits: Exit[] = [],
-		things: Thing[] = [],
+		things: Thing[] = []
 	) {
 		this.name = name;
 		this.description = description;
@@ -72,7 +73,7 @@ class Room {
 		if (this.things?.length > 0) {
 			state.say(
 				"You can see: " +
-					this.things?.map((thing) => thing.getFullName()).join(", "),
+					this.things?.map((thing) => thing.getFullName()).join(", ")
 			);
 		}
 		if (this.exits.length > 0) {
@@ -102,7 +103,12 @@ class Room {
 }
 
 class Thing {
-	constructor(article: string, name: string, description: string) {
+	constructor(
+		article: string,
+		name: string,
+		description: string,
+		purchaseable: boolean = false
+	) {
 		this.article = article;
 		this.name = name;
 		this.description = description;
@@ -111,10 +117,11 @@ class Thing {
 		this.cookingTimes = {};
 		this.cookedFor = 0;
 		this.container = false;
+		this.purchaseable = purchaseable;
 	}
 
 	get cookedStateString(): CookedState | null {
-		if (Object.keys(this.cookingTimes).length <= 3) {
+		if (Object.keys(this.cookingTimes).length <= 0) {
 			return null;
 		}
 		if (
@@ -148,11 +155,9 @@ class Thing {
 
 	describeContents(): string {
 		if (this.contents.length > 0) {
-			return ` (containing: ${
-				this.contents
-					?.map((thing) => thing.getFullName())
-					.join(", ")
-			})`;
+			return ` (containing: ${this.contents
+				?.map((thing) => thing.getFullName())
+				.join(", ")})`;
 		} else {
 			return "";
 		}
@@ -163,10 +168,36 @@ class Thing {
 			state.say(`The ${this.name} is too heavy to pick up.`);
 			return;
 		}
+		if (this.purchaseable) {
+			state.say(
+				"You're not a thief! Except for that one time when Becky and Ali made you steal a hairclip in Accessorize, but you felt really bad about that afterwards."
+			);
+			return;
+		}
 		state.say(`You take the ${this.name}.`);
 		state.inventory.push(this);
 		state.currentRoom.things = state.currentRoom.things?.filter(
-			(thing) => thing.name !== this.name,
+			(thing) => thing.name !== this.name
+		);
+	}
+
+	buy() {
+		if (!this.purchaseable) {
+			state.say(
+				"You already own that. Congratulations! You're moving up in the world!"
+			);
+			return;
+		}
+		if (!state.inventory.find((thing) => thing.name === "wallet")) {
+			state.say(
+				"You don't have any money, and apparently this is set in 2013 or something so you can't pay with your phone."
+			);
+			return;
+		}
+		state.say(`You buy the ${this.name}.`);
+		state.inventory.push(this);
+		state.currentRoom.things = state.currentRoom.things?.filter(
+			(thing) => thing.name !== this.name
 		);
 	}
 
@@ -174,7 +205,7 @@ class Thing {
 		state.say(`You drop the ${this.name}.`);
 		state.currentRoom.things?.push(this);
 		state.inventory = state.inventory.filter(
-			(thing) => thing.name !== this.name,
+			(thing) => thing.name !== this.name
 		);
 	}
 
@@ -184,7 +215,7 @@ class Thing {
 
 	removeFromInventory() {
 		state.inventory = state.inventory.filter(
-			(thing) => thing.name !== this.name,
+			(thing) => thing.name !== this.name
 		);
 	}
 
@@ -218,7 +249,7 @@ class Thing {
 			}
 			if (this === container) {
 				state.say(
-					`You put the ${this.name} in itself. The universe gently explodes around you.`,
+					`You put the ${this.name} in itself. The universe gently explodes around you.`
 				);
 				doGameOver();
 				return;
@@ -240,7 +271,7 @@ class Thing {
 		if (this.containedBy) {
 			this.containedBy.removeContents(this);
 			state.say(
-				`You take the ${this.name} out of the ${this.containedBy.name}.`,
+				`You take the ${this.name} out of the ${this.containedBy.name}.`
 			);
 			this.containedBy = null;
 		}
@@ -308,7 +339,7 @@ class TofuBlock extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You put the whole block of raw tofu in your mouth. It's bland and vast.",
+					"You put the whole block of raw tofu in your mouth. It's bland and vast."
 				);
 				this.removeFromInventory();
 				break;
@@ -334,6 +365,13 @@ class TofuBlock extends Thing {
 				this.containedBy.containedBy?.on)
 		) {
 			this.cookedFor += minutes;
+			if (
+				this.cookedStateString === "burnt" &&
+				(state.currentRoom.name === "Kitchen" ||
+					state.currentRoom.name === "Dining Room")
+			) {
+				state.say("An unpleasant burning smell wafts from the oven.");
+			}
 		}
 	}
 }
@@ -343,7 +381,7 @@ class TofuCubes extends Thing {
 		super(
 			"some",
 			"cubes of tofu",
-			"They're small cubes of tofu. They wobble imperceptibly.",
+			"Each one more perfect than the last. Euclid would be proud."
 		);
 		this.cookingTimes = {
 			raw: 0,
@@ -360,7 +398,7 @@ class TofuCubes extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You snack on the cubes of tofu. They're okay. You're not sure what you expected.",
+					"You snack on the cubes of tofu. They're okay. You're not sure what you expected."
 				);
 				this.removeFromInventory();
 				break;
@@ -377,13 +415,24 @@ class TofuCubes extends Thing {
 				this.containedBy.containedBy?.on)
 		) {
 			this.cookedFor += minutes;
+			if (
+				this.cookedStateString === "burnt" &&
+				(state.currentRoom.name === "Kitchen" ||
+					state.currentRoom.name === "Dining Room")
+			) {
+				state.say("An unpleasant burning smell wafts from the oven.");
+			}
 		}
 	}
 }
 
 class SmallSaucepan extends Thing {
 	constructor() {
-		super("a", "small saucepan", "It's a small saucepan.");
+		super(
+			"a",
+			"small saucepan",
+			"Copper-bottomed, just like mama used to make."
+		);
 		this.container = true;
 	}
 }
@@ -414,7 +463,7 @@ class MarinatingBowl extends Thing {
 		super(
 			"a",
 			"marinating bowl",
-			"When your grandmother gave you this bowl, she made it explicitly clear that it was to be used exclusively for marinating things. Weird, but there you go.",
+			"When your grandmother gave you this bowl, she made it explicitly clear that it was to be used exclusively for marinating things. Weird, but there you go."
 		);
 		this.container = true;
 	}
@@ -422,7 +471,11 @@ class MarinatingBowl extends Thing {
 
 class PicklingBowl extends Thing {
 	constructor() {
-		super("a", "pickling bowl", "It's a bowl for pickling things.");
+		super(
+			"a",
+			"pickling bowl",
+			"It's a bowl for pickling things. Non-reactive, y'know."
+		);
 		this.container = true;
 	}
 }
@@ -477,7 +530,7 @@ class LimeJuice extends Thing {
 			return;
 		}
 		switch (verb) {
-			case "eat":
+			case "drink":
 				state.say("You're a weirdo, you know that?");
 				this.removeFromInventory();
 				break;
@@ -519,7 +572,7 @@ class Vinegar extends Thing {
 			return;
 		}
 		switch (verb) {
-			case "eat":
+			case "drink":
 				state.say("You drink the vinegar. It's sour.");
 				this.removeFromInventory();
 				break;
@@ -534,7 +587,7 @@ class MapleSyrup extends Thing {
 		super(
 			"some",
 			"maple syrup",
-			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'.",
+			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'."
 		);
 	}
 
@@ -588,6 +641,14 @@ class Cashews extends Thing {
 				this.containedBy.containedBy?.on)
 		) {
 			this.cookedFor += minutes;
+			console.log(this.cookedStateString, state.currentRoom.name);
+			if (
+				this.cookedStateString === "burnt" &&
+				(state.currentRoom.name === "Kitchen" ||
+					state.currentRoom.name === "Dining Room")
+			) {
+				state.say("An unpleasant burning smell wafts from the oven.");
+			}
 		}
 	}
 }
@@ -599,7 +660,11 @@ interface Oven extends Thing {
 
 class Oven extends Thing {
 	constructor() {
-		super("an", "oven", "It's an oven.");
+		super(
+			"an",
+			"oven",
+			"Raging gas burners range along the top of this top of the range range. The oven goes from 0 to 180 in under a minute, thanks to proprietary technologies which the salesperson described to you as 'lethal' and 'banned in the state of California'."
+		);
 		this.on = false;
 		this.stationary = true;
 		this.container = true;
@@ -621,19 +686,44 @@ class Oven extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You break your teeth. This is because you tried to eat an oven.",
+					"You break your teeth. This is because you tried to eat an oven."
 				);
 				break;
 			case "turn on":
-				state.say("You turn on the oven.");
+				state.say(
+					"The oven comes to life with a patent-pending hum. Heat begins to emenate from it."
+				);
 				this.on = true;
 				this.onAtTime = state.time;
 				break;
 			case "turn off":
-				state.say("You turn off the oven.");
+				state.say(
+					"The oven dies down with a sad whirr. The temperature in the kitchen drops significantly."
+				);
 				this.on = false;
 				break;
 		}
+	}
+}
+
+class Wallet extends Thing {
+	constructor() {
+		super(
+			"a",
+			"wallet",
+			"Chock-full of loyalty cards. When was the last time you went to Go Outdoors? Come on, be honest."
+		);
+	}
+}
+
+class SambalSauce extends Thing {
+	constructor(purchaseable) {
+		super(
+			"a bottle of",
+			"sambal sauce",
+			"It's got an illustration of a goose bursting into flames while fighting a dragon also bursting into flames on the label. That probably means it's hot.",
+			purchaseable
+		);
 	}
 }
 
@@ -656,16 +746,26 @@ const rooms = [
 			new Vinegar(),
 			new MapleSyrup(),
 			new Cashews(),
-		],
+		]
 	),
 	new Room("Dining Room", "You are in a dining room.", ["kitchen", "hall"]),
-	new Room("Hall", "You are in a hall.", ["dining room", "high street"]),
+	new Room(
+		"Hall",
+		"You are in a hall.",
+		["dining room", "high street"],
+		[new Wallet()]
+	),
 	new Room("High Street", "You are on the high street.", [
 		"hall",
 		"supermarket",
 		"greengrocer",
 	]),
-	new Room("Supermarket", "You are in a supermarket.", ["high street"]),
+	new Room(
+		"Supermarket",
+		"You are in a supermarket.",
+		["high street"],
+		[new SambalSauce(true)]
+	),
 	new Room("Greengrocer", "You are in a greengrocer.", ["high street"]),
 ];
 
@@ -718,20 +818,22 @@ const parseUsage = (text: string) => {
 
 	// Get the subject
 	// The preposition can be "in" or "from"
-	const subjectEndIndex = parts.indexOf("in") !== -1
-		? parts.indexOf("in")
-		: parts.indexOf("from") !== -1
-		? parts.indexOf("from")
-		: parts.length;
+	const subjectEndIndex =
+		parts.indexOf("in") !== -1
+			? parts.indexOf("in")
+			: parts.indexOf("from") !== -1
+			? parts.indexOf("from")
+			: parts.length;
 	const subject = parts.slice(0, subjectEndIndex).join(" ");
 
 	// Get the object if present
 	let object = "";
-	const objectIndex = parts.indexOf("in") !== -1
-		? parts.indexOf("in")
-		: parts.indexOf("from") !== -1
-		? parts.indexOf("from")
-		: parts.length;
+	const objectIndex =
+		parts.indexOf("in") !== -1
+			? parts.indexOf("in")
+			: parts.indexOf("from") !== -1
+			? parts.indexOf("from")
+			: parts.length;
 	if (objectIndex !== -1 && objectIndex + 1 < parts.length) {
 		object = parts.slice(objectIndex + 1).join(" ");
 	}
@@ -766,9 +868,10 @@ export const parse = (input = "", say: (output: string) => void) => {
 			} else if (args[0] === "at") {
 				const thing = args.slice(1).join(" ");
 				if (thing) {
-					const thingExists = state.currentRoom?.things?.find((roomThing) =>
-						roomThing.name.toLowerCase().includes(thing.toLowerCase())
-					) ||
+					const thingExists =
+						state.currentRoom?.things?.find((roomThing) =>
+							roomThing.name.toLowerCase().includes(thing.toLowerCase())
+						) ||
 						state.inventory.find((inventoryThing) =>
 							inventoryThing.name.toLowerCase().includes(thing.toLowerCase())
 						);
@@ -785,6 +888,27 @@ export const parse = (input = "", say: (output: string) => void) => {
 				say("Look where?");
 			}
 			break;
+		case "examine": {
+			const thing = args.join(" ");
+			if (thing) {
+				const thingExists =
+					state.currentRoom?.things?.find((roomThing) =>
+						roomThing.name.toLowerCase().includes(thing.toLowerCase())
+					) ||
+					state.inventory.find((inventoryThing) =>
+						inventoryThing.name.toLowerCase().includes(thing.toLowerCase())
+					);
+				if (thingExists) {
+					thingExists.describe();
+					tick();
+				} else {
+					say(`You can't see that.`);
+				}
+			} else {
+				say("Examine what?");
+			}
+			break;
+		}
 		case "go": {
 			const direction = args.join(" ");
 			if (direction) {
@@ -793,7 +917,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 				);
 				if (newRoom) {
 					const roomExists = rooms.find(
-						(room) => room.name.toLowerCase() === newRoom.toLowerCase(),
+						(room) => room.name.toLowerCase() === newRoom.toLowerCase()
 					);
 					if (!roomExists) {
 						say(`You can't go that way.`);
@@ -845,10 +969,28 @@ export const parse = (input = "", say: (output: string) => void) => {
 			}
 			break;
 		}
+		case "buy": {
+			const thing = args.join(" ");
+			if (thing) {
+				const thingExists = state.currentRoom?.things?.find((roomThing) =>
+					roomThing.name.toLowerCase().includes(thing.toLowerCase())
+				);
+				if (thingExists) {
+					thingExists.buy();
+					tick();
+				} else {
+					say(`You can't buy that.`);
+				}
+			} else {
+				say("Buy what?");
+			}
+			break;
+		}
 		case "wait": {
 			const minutes = parseInt(args[0]);
 			if (minutes) {
 				tick(minutes);
+				say("Time passes.");
 			} else {
 				say("Wait for how many minutes?");
 			}
@@ -858,13 +1000,14 @@ export const parse = (input = "", say: (output: string) => void) => {
 			if (state.inventory.length > 0) {
 				say(
 					"You're carrying: " +
-						state.inventory.map((thing) => thing.getFullName()).join(", "),
+						state.inventory.map((thing) => thing.getFullName()).join(", ")
 				);
 			} else {
 				say("You're carrying nothing.");
 			}
 			break;
 		case "state":
+			console.log(state);
 			say(JSON.stringify(state, null, 2));
 			break;
 		default: {
