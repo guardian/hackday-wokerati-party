@@ -1,6 +1,7 @@
 import { signal } from "@preact/signals";
 import Form from "../components/Form.tsx";
-import { parse, state, printTime } from "../lib/game.ts";
+import { parse, printTime } from "../lib/game.ts";
+import { state } from "../lib/state.ts";
 import { useEffect, useRef } from "preact/hooks";
 
 interface Message {
