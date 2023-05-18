@@ -607,7 +607,7 @@ class Oven extends Thing {
 		if (this.on) {
 			return "an oven (on)" + this.describeContents();
 		} else {
-			return "an oven (off) " + this.describeContents();
+			return "an oven (off)" + this.describeContents();
 		}
 	}
 
