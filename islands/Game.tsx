@@ -43,9 +43,9 @@ export default function Game() {
 			{output.value.map((line, index) => {
 				if (index === 0) {
 					return (
-						<p
+						<h1
 							className={"text-2xl font-bold tracking-tight text-gray-300 py-2"}
-						>{`${line.text}`}</p>
+						>{`${line.text}`}</h1>
 					);
 				}
 

@@ -14,7 +14,7 @@ interface Thing {
 	name: string;
 	description: string;
 	usages: Usage[];
-	properties?: Property[];
+	properties: string[];
 	contents: Thing[];
 	stationary: boolean;
 	container: boolean;
@@ -23,11 +23,6 @@ interface Thing {
 	cookedState: CookedState;
 	cookedFor: number;
 	purchaseable: boolean;
-}
-
-interface Property {
-	name: string;
-	value: string;
 }
 
 interface Usage {
@@ -56,7 +51,7 @@ class Room {
 		name: string,
 		description: string,
 		exits: Exit[] = [],
-		things: Thing[] = []
+		things: Thing[] = [],
 	) {
 		this.name = name;
 		this.description = description;
@@ -73,7 +68,7 @@ class Room {
 		if (this.things?.length > 0) {
 			state.say(
 				"You can see: " +
-					this.things?.map((thing) => thing.getFullName()).join(", ")
+					this.things?.map((thing) => thing.getFullName()).join(", "),
 			);
 		}
 		if (this.exits.length > 0) {
@@ -107,7 +102,7 @@ class Thing {
 		article: string,
 		name: string,
 		description: string,
-		purchaseable: boolean = false
+		purchaseable: boolean = false,
 	) {
 		this.article = article;
 		this.name = name;
@@ -139,6 +134,12 @@ class Thing {
 		}
 	}
 
+	get propertiesString(): string {
+		return this.properties?.length > 0
+			? ` (${this.properties.join(", ")})`
+			: "";
+	}
+
 	tick(minutes: number) {
 		this.contents.forEach((thing) => thing.tick(minutes));
 	}
@@ -146,18 +147,22 @@ class Thing {
 	getFullName() {
 		return `${this.article} ${this.name}${
 			this.cookedStateString ? ` (${this.cookedStateString})` : ""
-		}${this.describeContents()}`;
+		}${this.describeContents()}${this.propertiesString}`;
 	}
 
 	describe() {
-		state.say(this.description + this.describeContents());
+		state.say(
+			this.description + this.describeContents() + this.propertiesString,
+		);
 	}
 
 	describeContents(): string {
 		if (this.contents.length > 0) {
-			return ` (containing: ${this.contents
-				?.map((thing) => thing.getFullName())
-				.join(", ")})`;
+			return ` (containing: ${
+				this.contents
+					?.map((thing) => thing.getFullName())
+					.join(", ")
+			})`;
 		} else {
 			return "";
 		}
@@ -170,34 +175,34 @@ class Thing {
 		}
 		if (this.purchaseable) {
 			state.say(
-				"You're not a thief! Except for that one time when Becky and Ali made you steal a hairclip in Accessorize, but you felt really bad about that afterwards."
+				"You're not a thief! Except for that one time when Becky and Ali made you steal a hairclip in Accessorize, but you felt really bad about that afterwards.",
 			);
 			return;
 		}
 		state.say(`You take the ${this.name}.`);
 		state.inventory.push(this);
 		state.currentRoom.things = state.currentRoom.things?.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
 		);
 	}
 
 	buy() {
 		if (!this.purchaseable) {
 			state.say(
-				"You already own that. Congratulations! You're moving up in the world!"
+				"You already own that. Congratulations! You're moving up in the world!",
 			);
 			return;
 		}
 		if (!state.inventory.find((thing) => thing.name === "wallet")) {
 			state.say(
-				"You don't have any money, and apparently this is set in 2013 or something so you can't pay with your phone."
+				"You don't have any money, and apparently this is set in 2013 or something so you can't pay with your phone.",
 			);
 			return;
 		}
 		state.say(`You buy the ${this.name}.`);
 		state.inventory.push(this);
 		state.currentRoom.things = state.currentRoom.things?.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
 		);
 	}
 
@@ -205,22 +210,28 @@ class Thing {
 		state.say(`You drop the ${this.name}.`);
 		state.currentRoom.things?.push(this);
 		state.inventory = state.inventory.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
 		);
 	}
 
-	addProperty(property: Property) {
+	addProperty(property: string) {
+		if (this.properties?.includes(property)) {
+			return;
+		}
 		this.properties?.push(property);
 	}
 
-	removeFromInventory() {
+	removeFromGame() {
 		state.inventory = state.inventory.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
+		);
+		state.currentRoom.things = state.currentRoom.things?.filter(
+			(thing) => thing.name !== this.name,
 		);
 	}
 
 	hasProperty(property: string) {
-		return this.properties?.find((prop) => prop.name === property);
+		return this.properties?.includes(property);
 	}
 
 	addContents(thing: Thing) {
@@ -249,14 +260,14 @@ class Thing {
 			}
 			if (this === container) {
 				state.say(
-					`You put the ${this.name} in itself. The universe gently explodes around you.`
+					`You put the ${this.name} in itself. The universe gently explodes around you.`,
 				);
 				doGameOver();
 				return;
 			}
 			container.addContents(this);
 			this.containedBy = container;
-			this.removeFromInventory();
+			this.removeFromGame();
 			state.say(`You put the ${this.name} in the ${container.name}.`);
 		} else {
 			state.say("You can't see that here.");
@@ -271,7 +282,7 @@ class Thing {
 		if (this.containedBy) {
 			this.containedBy.removeContents(this);
 			state.say(
-				`You take the ${this.name} out of the ${this.containedBy.name}.`
+				`You take the ${this.name} out of the ${this.containedBy.name}.`,
 			);
 			this.containedBy = null;
 		}
@@ -306,6 +317,30 @@ class Thing {
 		}
 		return null;
 	}
+
+	get topLevelContainer(): Thing {
+		if (this.containedBy) {
+			return this.containedBy.topLevelContainer;
+		}
+		return this;
+	}
+}
+
+class CookableThing extends Thing {
+	tick(minutes: number) {
+		super.tick(minutes);
+		const container = this.topLevelContainer;
+		if (container instanceof Oven && container.on) {
+			this.cookedFor += minutes;
+			if (
+				this.cookedStateString === "burnt" &&
+				(state.currentRoom.name === "Kitchen" ||
+					state.currentRoom.name === "Dining Room")
+			) {
+				state.say("An unpleasant burning smell wafts from the oven.");
+			}
+		}
+	}
 }
 
 const verbs = [
@@ -321,7 +356,9 @@ const verbs = [
 
 type Verb = (typeof verbs)[number];
 
-class TofuBlock extends Thing {
+class TofuBlock extends CookableThing {
+	private marinatedFor!: number;
+
 	constructor() {
 		super("a", "block of tofu", "It's extra-firm. It wobbles imperceptibly.");
 		this.cookingTimes = {
@@ -339,18 +376,21 @@ class TofuBlock extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You put the whole block of raw tofu in your mouth. It's bland and vast."
+					"You put the whole block of raw tofu in your mouth. It's bland and vast.",
 				);
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			case "dry":
-				this.addProperty({ name: "dry", value: "true" });
+				this.addProperty("dry");
 				state.say("You pat the tofu dry with a paper towel. How fastidious!");
 				break;
 			case "cut":
 				state.say("You cut the tofu into cubes.");
-				this.removeFromInventory();
+				this.removeFromGame();
 				state.inventory.push(new TofuCubes());
+				// The tofu cubes inherit all of the properties of the tofu block
+				state.inventory[state.inventory.length - 1].properties =
+					this.properties;
 				break;
 			default:
 				state.say("You can't do that with the tofu.");
@@ -359,35 +399,36 @@ class TofuBlock extends Thing {
 
 	tick(minutes: number) {
 		super.tick(minutes);
+
+		const container = this.topLevelContainer;
+
 		if (
-			(this.containedBy instanceof Oven && this.containedBy.on) ||
-			(this.containedBy?.containedBy instanceof Oven &&
-				this.containedBy.containedBy?.on)
+			container && container.contents.length > 0 &&
+			container.contents.some((item) => item instanceof SoySauce)
 		) {
-			this.cookedFor += minutes;
-			if (
-				this.cookedStateString === "burnt" &&
-				(state.currentRoom.name === "Kitchen" ||
-					state.currentRoom.name === "Dining Room")
-			) {
-				state.say("An unpleasant burning smell wafts from the oven.");
+			this.marinatedFor += minutes;
+			if (this.marinatedFor >= 30) {
+				this.addProperty("marinated");
 			}
 		}
 	}
 }
 
-class TofuCubes extends Thing {
+class TofuCubes extends CookableThing {
+	private marinatedFor: number;
+
 	constructor() {
 		super(
 			"some",
 			"cubes of tofu",
-			"Each one more perfect than the last. Euclid would be proud."
+			"Each one more perfect than the last. Euclid would be proud.",
 		);
 		this.cookingTimes = {
 			raw: 0,
 			cooked: 20,
 			burnt: 40,
 		};
+		this.marinatedFor = 0;
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -398,9 +439,9 @@ class TofuCubes extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You snack on the cubes of tofu. They're okay. You're not sure what you expected."
+					"You snack on the cubes of tofu. They're okay. You're not sure what you expected.",
 				);
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the tofu cubes.");
@@ -409,37 +450,24 @@ class TofuCubes extends Thing {
 
 	tick(minutes: number) {
 		super.tick(minutes);
+
+		const container = this.topLevelContainer;
+
 		if (
-			(this.containedBy instanceof Oven && this.containedBy.on) ||
-			(this.containedBy?.containedBy instanceof Oven &&
-				this.containedBy.containedBy?.on)
+			container && container.contents.length > 0 &&
+			container.contents.some((item) => item instanceof SoySauce)
 		) {
-			this.cookedFor += minutes;
-			if (
-				this.cookedStateString === "burnt" &&
-				(state.currentRoom.name === "Kitchen" ||
-					state.currentRoom.name === "Dining Room")
-			) {
-				state.say("An unpleasant burning smell wafts from the oven.");
+			this.marinatedFor += minutes;
+			if (this.marinatedFor >= 30) {
+				this.addProperty("marinated");
 			}
 		}
 	}
 }
 
-class SmallSaucepan extends Thing {
-	constructor() {
-		super(
-			"a",
-			"small saucepan",
-			"Copper-bottomed, just like mama used to make."
-		);
-		this.container = true;
-	}
-}
-
 class GarlicCloves extends Thing {
-	constructor() {
-		super("some", "garlic cloves", "They have a powerful aroma.");
+	constructor(purchaseable: boolean) {
+		super("some", "garlic cloves", "They have a powerful aroma.", purchaseable);
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -450,7 +478,7 @@ class GarlicCloves extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say("Why did you do that?");
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the garlic cloves.");
@@ -463,7 +491,7 @@ class MarinatingBowl extends Thing {
 		super(
 			"a",
 			"marinating bowl",
-			"When your grandmother gave you this bowl, she made it explicitly clear that it was to be used exclusively for marinating things. Weird, but there you go."
+			"When your grandmother gave you this bowl, she made it explicitly clear that it was to be used exclusively for marinating things. Weird, but there you go.",
 		);
 		this.container = true;
 	}
@@ -474,27 +502,9 @@ class PicklingBowl extends Thing {
 		super(
 			"a",
 			"pickling bowl",
-			"It's a bowl for pickling things. Non-reactive, y'know."
+			"It's a bowl for pickling things. Non-reactive, y'know.",
 		);
 		this.container = true;
-	}
-}
-
-class SmallTray extends Thing {
-	constructor() {
-		super("a", "small tray", "Good for putting in the oven.");
-		this.container = true;
-	}
-
-	use(verb: Verb, object?: Thing) {
-		const used = super.use(verb, object);
-		if (used) {
-			return;
-		}
-		switch (verb) {
-			default:
-				state.say("You can't do that with the small oven tray.");
-		}
 	}
 }
 
@@ -511,7 +521,7 @@ class SoySauce extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say("You drink the soy sauce. It's salty.");
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the soy sauce.");
@@ -532,7 +542,7 @@ class LimeJuice extends Thing {
 		switch (verb) {
 			case "drink":
 				state.say("You're a weirdo, you know that?");
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the lime juice.");
@@ -541,8 +551,16 @@ class LimeJuice extends Thing {
 }
 
 class Ginger extends Thing {
-	constructor() {
-		super("some", "fresh ginger", "It's a root. It's spicy.");
+	private pickledFor: number;
+
+	constructor(purchaseable: boolean) {
+		super(
+			"some",
+			"fresh ginger",
+			"A tangy, tasty, titchy tuber.",
+			purchaseable,
+		);
+		this.pickledFor = 0;
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -553,17 +571,36 @@ class Ginger extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say("Why did you do that?");
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the ginger.");
+		}
+	}
+
+	tick(minutes: number) {
+		super.tick(minutes);
+
+		const container = this.topLevelContainer;
+
+		console.log(container);
+		console.log(container.contents);
+
+		if (
+			container && container.contents.length > 0 &&
+			container.contents.some((item) => item instanceof Vinegar)
+		) {
+			this.pickledFor += minutes;
+			if (minutes >= 20) {
+				this.addProperty("pickled");
+			}
 		}
 	}
 }
 
 class Vinegar extends Thing {
 	constructor() {
-		super("some", "white vinegar", "It's sour.");
+		super("some", "red wine vinegar", "It's extremely sour and very organic.");
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -573,8 +610,8 @@ class Vinegar extends Thing {
 		}
 		switch (verb) {
 			case "drink":
-				state.say("You drink the vinegar. It's sour.");
-				this.removeFromInventory();
+				state.say("You drink the vinegar, you weirdo.");
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the vinegar.");
@@ -587,7 +624,7 @@ class MapleSyrup extends Thing {
 		super(
 			"some",
 			"maple syrup",
-			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'."
+			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'.",
 		);
 	}
 
@@ -599,7 +636,7 @@ class MapleSyrup extends Thing {
 		switch (verb) {
 			case "drink":
 				state.say("You drink the maple syrup. It's distressingly sweet.");
-				this.removeFromInventory();
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the maple syrup.");
@@ -607,9 +644,9 @@ class MapleSyrup extends Thing {
 	}
 }
 
-class Cashews extends Thing {
-	constructor() {
-		super("some", "cashews", "They're nuts.");
+class Cashews extends CookableThing {
+	constructor(purchaseable: boolean) {
+		super("some", "cashews", "They're nuts.", purchaseable);
 		this.cookedFor = 0;
 		this.cookingTimes = {
 			raw: 0,
@@ -625,30 +662,13 @@ class Cashews extends Thing {
 		}
 		switch (verb) {
 			case "eat":
-				state.say("Delicious.");
-				this.removeFromInventory();
+				state.say(
+					"Delicious. Unfortunate, because you needed them, but delicious.",
+				);
+				this.removeFromGame();
 				break;
 			default:
 				state.say("You can't do that with the cashews.");
-		}
-	}
-
-	tick(minutes: number) {
-		super.tick(minutes);
-		if (
-			(this.containedBy instanceof Oven && this.containedBy.on) ||
-			(this.containedBy?.containedBy instanceof Oven &&
-				this.containedBy.containedBy?.on)
-		) {
-			this.cookedFor += minutes;
-			console.log(this.cookedStateString, state.currentRoom.name);
-			if (
-				this.cookedStateString === "burnt" &&
-				(state.currentRoom.name === "Kitchen" ||
-					state.currentRoom.name === "Dining Room")
-			) {
-				state.say("An unpleasant burning smell wafts from the oven.");
-			}
 		}
 	}
 }
@@ -663,7 +683,7 @@ class Oven extends Thing {
 		super(
 			"an",
 			"oven",
-			"Raging gas burners range along the top of this top of the range range. The oven goes from 0 to 180 in under a minute, thanks to proprietary technologies which the salesperson described to you as 'lethal' and 'banned in the state of California'."
+			"Raging gas burners range along the top of this top of the range range. The oven goes from 0 to 180 in under a minute, thanks to proprietary technologies which the salesperson described to you as 'lethal' and 'banned in the state of California'.",
 		);
 		this.on = false;
 		this.stationary = true;
@@ -686,19 +706,19 @@ class Oven extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You break your teeth. This is because you tried to eat an oven."
+					"You break your teeth. This is because you tried to eat an oven.",
 				);
 				break;
 			case "turn on":
 				state.say(
-					"The oven comes to life with a patent-pending hum. Heat begins to emenate from it."
+					"The oven comes to life with a patent-pending hum. Heat begins to emanate from it.",
 				);
 				this.on = true;
 				this.onAtTime = state.time;
 				break;
 			case "turn off":
 				state.say(
-					"The oven dies down with a sad whirr. The temperature in the kitchen drops significantly."
+					"The oven dies down with a sad whirr. The temperature in the kitchen drops significantly.",
 				);
 				this.on = false;
 				break;
@@ -711,19 +731,30 @@ class Wallet extends Thing {
 		super(
 			"a",
 			"wallet",
-			"Chock-full of loyalty cards. When was the last time you went to Go Outdoors? Come on, be honest."
+			"Chock-full of loyalty cards. When was the last time you went to Go Outdoors? Come on, be honest.",
 		);
 	}
 }
 
 class SambalSauce extends Thing {
-	constructor(purchaseable) {
+	constructor(purchaseable: boolean) {
 		super(
 			"a bottle of",
 			"sambal sauce",
 			"It's got an illustration of a goose bursting into flames while fighting a dragon also bursting into flames on the label. That probably means it's hot.",
-			purchaseable
+			purchaseable,
 		);
+	}
+}
+
+class Platter extends Thing {
+	constructor() {
+		super(
+			"a",
+			"platter",
+			"A large, flat, oval platter. It's got a picture of a goose on it.",
+		);
+		this.container = true;
 	}
 }
 
@@ -735,25 +766,22 @@ const rooms = [
 		[
 			new Oven(),
 			new TofuBlock(),
-			new SmallSaucepan(),
 			new MarinatingBowl(),
 			new PicklingBowl(),
-			new SmallTray(),
 			new SoySauce(),
 			new LimeJuice(),
-			new GarlicCloves(),
-			new Ginger(),
 			new Vinegar(),
 			new MapleSyrup(),
-			new Cashews(),
-		]
+		],
 	),
-	new Room("Dining Room", "You are in a dining room.", ["kitchen", "hall"]),
+	new Room("Dining Room", "You are in a dining room.", ["kitchen", "hall"], [
+		new Platter(),
+	]),
 	new Room(
 		"Hall",
 		"You are in a hall.",
 		["dining room", "high street"],
-		[new Wallet()]
+		[new Wallet()],
 	),
 	new Room("High Street", "You are on the high street.", [
 		"hall",
@@ -764,9 +792,13 @@ const rooms = [
 		"Supermarket",
 		"You are in a supermarket.",
 		["high street"],
-		[new SambalSauce(true)]
+		[new SambalSauce(true)],
 	),
-	new Room("Greengrocer", "You are in a greengrocer.", ["high street"]),
+	new Room("Greengrocer", "You are in a greengrocer.", ["high street"], [
+		new GarlicCloves(true),
+		new Ginger(true),
+		new Cashews(true),
+	]),
 ];
 
 export const state: State = {
@@ -818,22 +850,20 @@ const parseUsage = (text: string) => {
 
 	// Get the subject
 	// The preposition can be "in" or "from"
-	const subjectEndIndex =
-		parts.indexOf("in") !== -1
-			? parts.indexOf("in")
-			: parts.indexOf("from") !== -1
-			? parts.indexOf("from")
-			: parts.length;
+	const subjectEndIndex = parts.indexOf("in") !== -1
+		? parts.indexOf("in")
+		: parts.indexOf("from") !== -1
+		? parts.indexOf("from")
+		: parts.length;
 	const subject = parts.slice(0, subjectEndIndex).join(" ");
 
 	// Get the object if present
 	let object = "";
-	const objectIndex =
-		parts.indexOf("in") !== -1
-			? parts.indexOf("in")
-			: parts.indexOf("from") !== -1
-			? parts.indexOf("from")
-			: parts.length;
+	const objectIndex = parts.indexOf("in") !== -1
+		? parts.indexOf("in")
+		: parts.indexOf("from") !== -1
+		? parts.indexOf("from")
+		: parts.length;
 	if (objectIndex !== -1 && objectIndex + 1 < parts.length) {
 		object = parts.slice(objectIndex + 1).join(" ");
 	}
@@ -845,13 +875,126 @@ const parseUsage = (text: string) => {
 	};
 };
 
+const findThingInGame = (name: string) => {
+	const allThings: Thing[] = [];
+	rooms.forEach((room) => {
+		room.things.forEach((thing) => {
+			allThings.push(thing);
+			if (thing.container) {
+				thing.contents.forEach((thing) => {
+					allThings.push(thing);
+				});
+			}
+		});
+	});
+	state.inventory.forEach((thing) => {
+		allThings.push(thing);
+		if (thing.container) {
+			thing.contents.forEach((thing) => {
+				allThings.push(thing);
+			});
+		}
+	});
+
+	return allThings.find((thing) =>
+		thing.name.toLowerCase() === name.toLowerCase()
+	);
+};
+
+const calculateScore = () => {
+	let score = 0;
+	let maxScore = 200;
+	// Tofu dry is worth 10 points
+	// Tofu cut is worth 20 points
+	// Tofu marinated is worth 30 points
+	// Tofu cooked is worth 30 points
+	// Tofu burnt is worth -30 points
+	const tofuBlock = findThingInGame("block of tofu") as TofuBlock;
+	const tofuCubes = findThingInGame("cubes of tofu") as TofuCubes;
+	console.log(tofuBlock, tofuCubes);
+	if (tofuCubes) {
+		score += 20;
+	}
+	if (
+		tofuBlock?.hasProperty("marinated") || tofuCubes?.hasProperty("marinated")
+	) {
+		score += 30;
+	}
+	if (tofuBlock?.hasProperty("dry") || tofuCubes?.hasProperty("dry")) {
+		score += 10;
+	}
+	if (
+		tofuBlock?.cookedStateString === "cooked" ||
+		tofuCubes?.cookedStateString === "cooked"
+	) {
+		score += 30;
+	}
+	if (
+		tofuBlock?.cookedStateString === "burnt" ||
+		tofuCubes?.cookedStateString === "burnt"
+	) {
+		score -= 30;
+	}
+	// Cashews cooked are worth 30 points
+	// Cashews burnt are worth -30 points
+	const cashews = findThingInGame("cashews") as Cashews;
+	if (cashews.cookedStateString === "cooked") {
+		score += 30;
+	}
+	if (cashews.cookedStateString === "burnt") {
+		score -= 30;
+	}
+	// Ginger pickled is worth 30 points
+	const ginger = findThingInGame("fresh ginger") as Ginger;
+	if (ginger.hasProperty("pickled")) {
+		score += 30;
+	}
+	// Sambal on platter is worth 15 points
+	const sambal = findThingInGame("sambal sauce") as SambalSauce;
+	if (sambal.containedBy?.name === "platter") {
+		score += 15;
+	}
+	// Tofu on platter is worth 15 points
+	if (
+		tofuBlock?.containedBy?.name === "platter" ||
+		tofuCubes?.containedBy?.name === "platter"
+	) {
+		score += 15;
+	}
+	// Cashews on platter is worth 15 points
+	if (cashews?.containedBy?.name === "platter") {
+		score += 15;
+	}
+	// Ginger on platter is worth 15 points
+	if (ginger?.containedBy?.name === "platter") {
+		score += 15;
+	}
+
+	return {
+		score: score,
+		maxScore: maxScore,
+	};
+};
+
 export const parse = (input = "", say: (output: string) => void) => {
 	const [command, ...args] = input.split(" ");
 	state.say = say;
 
+	calculateScore();
+
 	if (state.gameOver) {
 		state.say("The game is over. You've had your fun, now let me nap.");
 		return;
+	}
+
+	const timeLimit = 90;
+	if (state.time > timeLimit) {
+		state.say(
+			"It's 6pm, and your date is due to arrive! Let's see how you did...",
+		);
+		const { score, maxScore } = calculateScore();
+		state.say(`You scored ${score} out of ${maxScore} points.`);
+		state.gameOver = true;
 	}
 
 	switch (command) {
@@ -868,10 +1011,9 @@ export const parse = (input = "", say: (output: string) => void) => {
 			} else if (args[0] === "at") {
 				const thing = args.slice(1).join(" ");
 				if (thing) {
-					const thingExists =
-						state.currentRoom?.things?.find((roomThing) =>
-							roomThing.name.toLowerCase().includes(thing.toLowerCase())
-						) ||
+					const thingExists = state.currentRoom?.things?.find((roomThing) =>
+						roomThing.name.toLowerCase().includes(thing.toLowerCase())
+					) ||
 						state.inventory.find((inventoryThing) =>
 							inventoryThing.name.toLowerCase().includes(thing.toLowerCase())
 						);
@@ -891,10 +1033,9 @@ export const parse = (input = "", say: (output: string) => void) => {
 		case "examine": {
 			const thing = args.join(" ");
 			if (thing) {
-				const thingExists =
-					state.currentRoom?.things?.find((roomThing) =>
-						roomThing.name.toLowerCase().includes(thing.toLowerCase())
-					) ||
+				const thingExists = state.currentRoom?.things?.find((roomThing) =>
+					roomThing.name.toLowerCase().includes(thing.toLowerCase())
+				) ||
 					state.inventory.find((inventoryThing) =>
 						inventoryThing.name.toLowerCase().includes(thing.toLowerCase())
 					);
@@ -917,7 +1058,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 				);
 				if (newRoom) {
 					const roomExists = rooms.find(
-						(room) => room.name.toLowerCase() === newRoom.toLowerCase()
+						(room) => room.name.toLowerCase() === newRoom.toLowerCase(),
 					);
 					if (!roomExists) {
 						say(`You can't go that way.`);
@@ -1000,7 +1141,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 			if (state.inventory.length > 0) {
 				say(
 					"You're carrying: " +
-						state.inventory.map((thing) => thing.getFullName()).join(", ")
+						state.inventory.map((thing) => thing.getFullName()).join(", "),
 				);
 			} else {
 				say("You're carrying nothing.");
