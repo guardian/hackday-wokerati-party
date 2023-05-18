@@ -114,13 +114,18 @@ class Thing {
 	}
 
 	get cookedStateString(): CookedState | null {
-		if (Object.keys(this.cookingTimes).length <= 0) {
+		if (Object.keys(this.cookingTimes).length <= 3) {
 			return null;
 		}
-		console.log(this.cookingTimes, this.cookedFor);
-		if (this.cookedFor < this.cookingTimes?.cooked) {
+		if (
+			this.cookingTimes.cooked &&
+			this.cookedFor < this.cookingTimes?.cooked
+		) {
 			return "raw";
-		} else if (this.cookedFor < this.cookingTimes?.burnt) {
+		} else if (
+			this.cookingTimes.burnt &&
+			this.cookedFor < this.cookingTimes?.burnt
+		) {
 			return "cooked";
 		} else {
 			return "burnt";
@@ -674,6 +679,7 @@ export const state: State = {
 		"You can use commands like 'look', 'take', 'put', 'eat', 'turn on', 'turn off', 'go', 'inventory', 'time', and 'help'.",
 		"Good luck!",
 	],
+	gameOver: false,
 };
 
 const printTime = () => {
