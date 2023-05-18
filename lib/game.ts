@@ -55,7 +55,7 @@ class Room {
 		name: string,
 		description: string,
 		exits: Exit[] = [],
-		things: Thing[] = []
+		things: Thing[] = [],
 	) {
 		this.name = name;
 		this.description = description;
@@ -72,7 +72,7 @@ class Room {
 		if (this.things?.length > 0) {
 			state.say(
 				"You can see: " +
-					this.things?.map((thing) => thing.getFullName()).join(", ")
+					this.things?.map((thing) => thing.getFullName()).join(", "),
 			);
 		}
 		if (this.exits.length > 0) {
@@ -148,9 +148,11 @@ class Thing {
 
 	describeContents(): string {
 		if (this.contents.length > 0) {
-			return ` (containing: ${this.contents
-				?.map((thing) => thing.getFullName())
-				.join(", ")})`;
+			return ` (containing: ${
+				this.contents
+					?.map((thing) => thing.getFullName())
+					.join(", ")
+			})`;
 		} else {
 			return "";
 		}
@@ -164,7 +166,7 @@ class Thing {
 		state.say(`You take the ${this.name}.`);
 		state.inventory.push(this);
 		state.currentRoom.things = state.currentRoom.things?.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
 		);
 	}
 
@@ -172,7 +174,7 @@ class Thing {
 		state.say(`You drop the ${this.name}.`);
 		state.currentRoom.things?.push(this);
 		state.inventory = state.inventory.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
 		);
 	}
 
@@ -182,7 +184,7 @@ class Thing {
 
 	removeFromInventory() {
 		state.inventory = state.inventory.filter(
-			(thing) => thing.name !== this.name
+			(thing) => thing.name !== this.name,
 		);
 	}
 
@@ -216,7 +218,7 @@ class Thing {
 			}
 			if (this === container) {
 				state.say(
-					`You put the ${this.name} in itself. The universe gently explodes around you.`
+					`You put the ${this.name} in itself. The universe gently explodes around you.`,
 				);
 				doGameOver();
 				return;
@@ -238,7 +240,7 @@ class Thing {
 		if (this.containedBy) {
 			this.containedBy.removeContents(this);
 			state.say(
-				`You take the ${this.name} out of the ${this.containedBy.name}.`
+				`You take the ${this.name} out of the ${this.containedBy.name}.`,
 			);
 			this.containedBy = null;
 		}
@@ -260,7 +262,7 @@ class Thing {
 	}
 
 	// Recursively look for a thing among the things in the room and the things they contain
-	findInContents(thing: string) {
+	findInContents(thing: string): Thing | null {
 		const found = this.contents?.find((item) => item.name.includes(thing));
 		if (found) {
 			return found;
@@ -306,7 +308,7 @@ class TofuBlock extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You put the whole block of raw tofu in your mouth. It's bland and vast."
+					"You put the whole block of raw tofu in your mouth. It's bland and vast.",
 				);
 				this.removeFromInventory();
 				break;
@@ -324,7 +326,7 @@ class TofuBlock extends Thing {
 		}
 	}
 
-	tick(minutes) {
+	tick(minutes: number) {
 		super.tick(minutes);
 		if (
 			(this.containedBy instanceof Oven && this.containedBy.on) ||
@@ -341,7 +343,7 @@ class TofuCubes extends Thing {
 		super(
 			"some",
 			"cubes of tofu",
-			"They're small cubes of tofu. They wobble imperceptibly."
+			"They're small cubes of tofu. They wobble imperceptibly.",
 		);
 		this.cookingTimes = {
 			raw: 0,
@@ -358,7 +360,7 @@ class TofuCubes extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You snack on the cubes of tofu. They're okay. You're not sure what you expected."
+					"You snack on the cubes of tofu. They're okay. You're not sure what you expected.",
 				);
 				this.removeFromInventory();
 				break;
@@ -367,7 +369,7 @@ class TofuCubes extends Thing {
 		}
 	}
 
-	tick(minutes) {
+	tick(minutes: number) {
 		super.tick(minutes);
 		if (
 			(this.containedBy instanceof Oven && this.containedBy.on) ||
@@ -391,7 +393,7 @@ class GarlicCloves extends Thing {
 		super("some", "garlic cloves", "They have a powerful aroma.");
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -412,7 +414,7 @@ class MarinatingBowl extends Thing {
 		super(
 			"a",
 			"marinating bowl",
-			"When your grandmother gave you this bowl, she made it explicitly clear that it was to be used exclusively for marinating things. Weird, but there you go."
+			"When your grandmother gave you this bowl, she made it explicitly clear that it was to be used exclusively for marinating things. Weird, but there you go.",
 		);
 		this.container = true;
 	}
@@ -431,7 +433,7 @@ class SmallTray extends Thing {
 		this.container = true;
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -448,7 +450,7 @@ class SoySauce extends Thing {
 		super("some", "soy sauce", "Salty.");
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -469,7 +471,7 @@ class LimeJuice extends Thing {
 		super("some", "lime juice", "It's sour.");
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -490,7 +492,7 @@ class Ginger extends Thing {
 		super("some", "fresh ginger", "It's a root. It's spicy.");
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -511,7 +513,7 @@ class Vinegar extends Thing {
 		super("some", "white vinegar", "It's sour.");
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -532,11 +534,11 @@ class MapleSyrup extends Thing {
 		super(
 			"some",
 			"maple syrup",
-			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'."
+			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'.",
 		);
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -563,7 +565,7 @@ class Cashews extends Thing {
 		};
 	}
 
-	use(verb: string, object?: Thing) {
+	use(verb: Verb, object?: Thing) {
 		const used = super.use(verb, object);
 		if (used) {
 			return;
@@ -578,7 +580,7 @@ class Cashews extends Thing {
 		}
 	}
 
-	tick(minutes) {
+	tick(minutes: number) {
 		super.tick(minutes);
 		if (
 			(this.containedBy instanceof Oven && this.containedBy.on) ||
@@ -619,7 +621,7 @@ class Oven extends Thing {
 		switch (verb) {
 			case "eat":
 				state.say(
-					"You break your teeth. This is because you tried to eat an oven."
+					"You break your teeth. This is because you tried to eat an oven.",
 				);
 				break;
 			case "turn on":
@@ -654,7 +656,7 @@ const rooms = [
 			new Vinegar(),
 			new MapleSyrup(),
 			new Cashews(),
-		]
+		],
 	),
 	new Room("Dining Room", "You are in a dining room.", ["kitchen", "hall"]),
 	new Room("Hall", "You are in a hall.", ["dining room", "high street"]),
@@ -693,7 +695,7 @@ const printTime = () => {
 	state.say(`The time is ${timeString}.`);
 };
 
-const tick = (minutes: number = 1) => {
+const tick = (minutes = 1) => {
 	state.time += minutes;
 
 	// Tick every Thing in every Room (which ticks all of that thing's contents, too)
@@ -716,22 +718,20 @@ const parseUsage = (text: string) => {
 
 	// Get the subject
 	// The preposition can be "in" or "from"
-	const subjectEndIndex =
-		parts.indexOf("in") !== -1
-			? parts.indexOf("in")
-			: parts.indexOf("from") !== -1
-			? parts.indexOf("from")
-			: parts.length;
+	const subjectEndIndex = parts.indexOf("in") !== -1
+		? parts.indexOf("in")
+		: parts.indexOf("from") !== -1
+		? parts.indexOf("from")
+		: parts.length;
 	const subject = parts.slice(0, subjectEndIndex).join(" ");
 
 	// Get the object if present
 	let object = "";
-	const objectIndex =
-		parts.indexOf("in") !== -1
-			? parts.indexOf("in")
-			: parts.indexOf("from") !== -1
-			? parts.indexOf("from")
-			: parts.length;
+	const objectIndex = parts.indexOf("in") !== -1
+		? parts.indexOf("in")
+		: parts.indexOf("from") !== -1
+		? parts.indexOf("from")
+		: parts.length;
 	if (objectIndex !== -1 && objectIndex + 1 < parts.length) {
 		object = parts.slice(objectIndex + 1).join(" ");
 	}
@@ -766,10 +766,9 @@ export const parse = (input = "", say: (output: string) => void) => {
 			} else if (args[0] === "at") {
 				const thing = args.slice(1).join(" ");
 				if (thing) {
-					const thingExists =
-						state.currentRoom?.things?.find((roomThing) =>
-							roomThing.name.toLowerCase().includes(thing.toLowerCase())
-						) ||
+					const thingExists = state.currentRoom?.things?.find((roomThing) =>
+						roomThing.name.toLowerCase().includes(thing.toLowerCase())
+					) ||
 						state.inventory.find((inventoryThing) =>
 							inventoryThing.name.toLowerCase().includes(thing.toLowerCase())
 						);
@@ -794,7 +793,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 				);
 				if (newRoom) {
 					const roomExists = rooms.find(
-						(room) => room.name.toLowerCase() === newRoom.toLowerCase()
+						(room) => room.name.toLowerCase() === newRoom.toLowerCase(),
 					);
 					if (!roomExists) {
 						say(`You can't go that way.`);
@@ -859,7 +858,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 			if (state.inventory.length > 0) {
 				say(
 					"You're carrying: " +
-						state.inventory.map((thing) => thing.getFullName()).join(", ")
+						state.inventory.map((thing) => thing.getFullName()).join(", "),
 				);
 			} else {
 				say("You're carrying nothing.");
@@ -881,8 +880,10 @@ export const parse = (input = "", say: (output: string) => void) => {
 				thing.name.toLowerCase().includes(subject.toLowerCase())
 			);
 			const thingInRoom = state.currentRoom?.findThing(subject);
-			if (thingInInventory || thingInRoom) {
-				const thingToUse = thingInInventory || thingInRoom;
+
+			const thingToUse = thingInInventory || thingInRoom;
+
+			if (thingToUse) {
 				// If there is an object, does it exist in our inventory or the current room?
 				if (object) {
 					const objectInInventory = state.inventory.find((thing) =>
