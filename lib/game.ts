@@ -784,7 +784,7 @@ export const state: State = {
 	gameOver: false,
 };
 
-const printTime = () => {
+export const printTime = (): string => {
 	const startTime = new Date(2020, 0, 1, 15, 0, 0);
 	const currentTime = new Date(startTime.getTime() + state.time * 60000);
 	const hours = currentTime.getHours();
@@ -792,7 +792,7 @@ const printTime = () => {
 	const timeString = `${hours < 10 ? "0" : ""}${hours}:${
 		minutes < 10 ? "0" : ""
 	}${minutes}`;
-	state.say(`The time is ${timeString}.`);
+	return timeString;
 };
 
 const tick = (minutes = 1) => {
@@ -859,7 +859,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 			say("There is no helping you.");
 			break;
 		case "time":
-			printTime();
+			say(printTime());
 			break;
 		case "look":
 			if (args.length === 0) {
