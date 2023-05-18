@@ -31,6 +31,7 @@ interface GameProps {
 
 export default function Game({ setShowRecipe }: GameProps) {
 	const outputBoxRef = useRef<HTMLDivElement>(null);
+	const inputFieldRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		if (outputBoxRef.current) {
@@ -38,6 +39,12 @@ export default function Game({ setShowRecipe }: GameProps) {
 			outputBoxRef.current.scrollTop = outputBoxRef.current.scrollHeight;
 		}
 	}, [output.value]);
+
+	useEffect(() => {
+		if (inputFieldRef.current) {
+			inputFieldRef.current.focus();
+		}
+	}, []);
 
 	return (
 		<div
@@ -63,7 +70,7 @@ export default function Game({ setShowRecipe }: GameProps) {
 					</p>
 				);
 			})}
-			<Form onSubmit={onSubmit} />
+			<Form onSubmit={onSubmit} inputFieldRef={inputFieldRef} />
 			<button
 				className="text-mono px-4 py-2 ml-2 text-white rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 my-4 lg:hidden"
 				onClick={() => setShowRecipe(true)}
