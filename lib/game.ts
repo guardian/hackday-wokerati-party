@@ -176,7 +176,7 @@ class Thing {
 		}
 		if (this.purchaseable) {
 			state.say(
-				"You're not a thief! Except for that one time when Becky and Ali made you steal a hairclip in Accessorize, but you felt really bad about that afterwards.",
+				"You're not a thief! Except for that one time when Mahesh and Raph made you steal a hairclip in Accessorize, but you felt really bad about that afterwards.",
 			);
 			return;
 		}
@@ -1024,7 +1024,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 	switch (command) {
 		case "help":
 			say(
-				`Available commands are: look, time, examine, go, take, drop, buy, remove, wait, inventory, ${
+				`Available commands are: look, time, examine, go, take, drop, buy, wait, inventory, ${
 					verbs.join(", ")
 				}.`,
 			);
