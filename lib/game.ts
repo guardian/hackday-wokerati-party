@@ -11,7 +11,7 @@ type CookedState = "raw" | "cooked" | "burnt";
 
 interface Thing {
 	article: string;
-	name: string;
+	name: ThingName;
 	description: string;
 	usages: Usage[];
 	properties: string[];
@@ -101,7 +101,7 @@ class Room {
 class Thing {
 	constructor(
 		article: string,
-		name: string,
+		name: ThingName,
 		description: string,
 		purchaseable: boolean = false,
 	) {
@@ -356,6 +356,23 @@ const verbs = [
 ] as const;
 
 type Verb = (typeof verbs)[number];
+
+type ThingName =
+	| "block of tofu"
+	| "cubes of tofu"
+	| "garlic cloves"
+	| "marinating bowl"
+	| "pickling bowl"
+	| "soy sauce"
+	| "lime juice"
+	| "red wine vinegar"
+	| "fresh ginger"
+	| "maple syrup"
+	| "cashews"
+	| "oven"
+	| "wallet"
+	| "sambal sauce"
+	| "platter";
 
 class TofuBlock extends CookableThing {
 	private marinatedFor!: number;
@@ -936,8 +953,8 @@ const calculateScore = () => {
 	const tofuBlock = findThingInGame("block of tofu") as TofuBlock;
 	const tofuCubes = findThingInGame("cubes of tofu") as TofuCubes;
 	if (tofuCubes) {
-		score += 20;
-		scoreParts.push({ name: "Tofu cut", score: 20 });
+		score += 10;
+		scoreParts.push({ name: "Tofu cut", score: 10 });
 	}
 	if (
 		tofuBlock?.hasProperty("marinated") || tofuCubes?.hasProperty("marinated")

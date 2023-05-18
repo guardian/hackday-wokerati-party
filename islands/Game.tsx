@@ -63,7 +63,7 @@ export default function Game({ setShowRecipe }: GameProps) {
 				return (
 					<p
 						className={`
-							${line.player ? "text-white" : "text-gray-300"} py-2	
+							${line.player ? "text-white font-semibold" : "text-gray-300"} py-2	
 						`}
 					>
 						{`${line.player ? `${printTime()} > ` : ""}${line.text}`}
