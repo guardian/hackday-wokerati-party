@@ -37,6 +37,7 @@ interface State {
 	inventory: Thing[];
 	currentRoom: Room;
 	time: number;
+	timeLimit: number;
 	usages?: Usage[];
 	intro: string[];
 }
@@ -739,7 +740,7 @@ class Wallet extends Thing {
 class SambalSauce extends Thing {
 	constructor(purchaseable: boolean) {
 		super(
-			"a bottle of",
+			"some",
 			"sambal sauce",
 			"It's got an illustration of a goose bursting into flames while fighting a dragon also bursting into flames on the label. That probably means it's hot.",
 			purchaseable,
@@ -761,8 +762,8 @@ class Platter extends Thing {
 const rooms = [
 	new Room(
 		"Kitchen",
-		"You are in a kitchen.",
-		["dining room"],
+		"This is a kitchen Nigel Slater would be proud of. Everything is brushed steel. The worktops are brushed steel. The appliances are brushed steel. The floor is brushed steel. You slide around on the brushed steel floor.",
+		["hall"],
 		[
 			new Oven(),
 			new TofuBlock(),
@@ -774,31 +775,47 @@ const rooms = [
 			new MapleSyrup(),
 		],
 	),
-	new Room("Dining Room", "You are in a dining room.", ["kitchen", "hall"], [
-		new Platter(),
-	]),
+	new Room(
+		"Dining Room",
+		"The dining room is tastefully decorated (by your ex, but your date doesn't need to know that). The table is set for two. Music plays softly from recessed speakers.",
+		["hall"],
+		[
+			new Platter(),
+		],
+	),
 	new Room(
 		"Hall",
-		"You are in a hall.",
-		["dining room", "high street"],
+		"Just a regular terraced house hall. Doors lead to the kitchen and dining room. The front door leads out onto the high street.",
+		["kitchen", "dining room", "high street"],
 		[new Wallet()],
 	),
-	new Room("High Street", "You are on the high street.", [
-		"hall",
-		"supermarket",
-		"greengrocer",
-	]),
+	new Room(
+		"High Street",
+		"You could have sworn that at some point in the recent past there were fewer betting shops and more local businesses here.",
+		[
+			"hall",
+			"supermarket",
+			"greengrocer",
+		],
+	),
 	new Room(
 		"Supermarket",
-		"You are in a supermarket.",
+		"Welcome to SainsCoRose! The lights are extremely bright. The floor is extremely shiny. The shelves contain all manner of things (except eggs, fresh vegetables, and cashews).",
 		["high street"],
 		[new SambalSauce(true)],
 	),
-	new Room("Greengrocer", "You are in a greengrocer.", ["high street"], [
-		new GarlicCloves(true),
-		new Ginger(true),
-		new Cashews(true),
-	]),
+	new Room(
+		"Greengrocer",
+		"You are in a maze of twisty little charming greengrocer aisles, all alike. You have never met anyone who has as many opinions about potatoes as this grocer. The shelves are piled high with fresh fruit and vegetables. There are even cashews!",
+		[
+			"high street",
+		],
+		[
+			new GarlicCloves(true),
+			new Ginger(true),
+			new Cashews(true),
+		],
+	),
 ];
 
 export const state: State = {
@@ -806,24 +823,26 @@ export const state: State = {
 	inventory: [],
 	currentRoom: rooms.find((room) => room.name === "Kitchen") || rooms[0],
 	time: 0,
+	timeLimit: 90,
 	intro: [
 		"Tofu-Eating Wokerati Dinner Party",
-		"Your date is coming for dinner in three hours, and you have decided, perhaps too ambitiously, to cook them an elaborate Ottolenghi recipe from the Guardian archives.",
-		"You have a kitchen, but only some of the ingredients. You have a few hours to prepare.",
-		"You can use commands like 'look', 'take', 'put', 'eat', 'turn on', 'turn off', 'go', 'inventory', 'time', and 'help'.",
+		"Your date is coming for dinner in an hour and a half, and you have decided, perhaps too ambitiously, to cook them an elaborate Ottolenghi recipe from the Guardian archives.",
+		"You have a kitchen, but only some of the ingredients.",
+		"Try typing 'help' for a list of commands.",
 		"Good luck!",
 	],
 	gameOver: false,
 };
 
 export const printTime = (): string => {
-	const startTime = new Date(2020, 0, 1, 15, 0, 0);
+	const startTime = new Date(2020, 0, 1, 16, 30, 0);
 	const currentTime = new Date(startTime.getTime() + state.time * 60000);
 	const hours = currentTime.getHours();
 	const minutes = currentTime.getMinutes();
+	const timeRemaining = Math.max(state.timeLimit - state.time, 0);
 	const timeString = `${hours < 10 ? "0" : ""}${hours}:${
 		minutes < 10 ? "0" : ""
-	}${minutes}`;
+	}${minutes} (${timeRemaining} minutes remaining)`;
 	return timeString;
 };
 
@@ -849,11 +868,13 @@ const parseUsage = (text: string) => {
 	const parts = textWithoutVerb.split(" ");
 
 	// Get the subject
-	// The preposition can be "in" or "from"
+	// The preposition can be "in" or "from" or "on"
 	const subjectEndIndex = parts.indexOf("in") !== -1
 		? parts.indexOf("in")
 		: parts.indexOf("from") !== -1
 		? parts.indexOf("from")
+		: parts.indexOf("on") !== -1
+		? parts.indexOf("on")
 		: parts.length;
 	const subject = parts.slice(0, subjectEndIndex).join(" ");
 
@@ -863,6 +884,8 @@ const parseUsage = (text: string) => {
 		? parts.indexOf("in")
 		: parts.indexOf("from") !== -1
 		? parts.indexOf("from")
+		: parts.indexOf("on") !== -1
+		? parts.indexOf("on")
 		: parts.length;
 	if (objectIndex !== -1 && objectIndex + 1 < parts.length) {
 		object = parts.slice(objectIndex + 1).join(" ");
@@ -903,7 +926,8 @@ const findThingInGame = (name: string) => {
 
 const calculateScore = () => {
 	let score = 0;
-	let maxScore = 200;
+	const maxScore = 200;
+	const scoreParts = [];
 	// Tofu dry is worth 10 points
 	// Tofu cut is worth 20 points
 	// Tofu marinated is worth 30 points
@@ -911,48 +935,56 @@ const calculateScore = () => {
 	// Tofu burnt is worth -30 points
 	const tofuBlock = findThingInGame("block of tofu") as TofuBlock;
 	const tofuCubes = findThingInGame("cubes of tofu") as TofuCubes;
-	console.log(tofuBlock, tofuCubes);
 	if (tofuCubes) {
 		score += 20;
+		scoreParts.push({ name: "Tofu cut", score: 20 });
 	}
 	if (
 		tofuBlock?.hasProperty("marinated") || tofuCubes?.hasProperty("marinated")
 	) {
 		score += 30;
+		scoreParts.push({ name: "Tofu marinated", score: 30 });
 	}
 	if (tofuBlock?.hasProperty("dry") || tofuCubes?.hasProperty("dry")) {
 		score += 10;
+		scoreParts.push({ name: "Tofu dried", score: 10 });
 	}
 	if (
 		tofuBlock?.cookedStateString === "cooked" ||
 		tofuCubes?.cookedStateString === "cooked"
 	) {
 		score += 30;
+		scoreParts.push({ name: "Tofu cooked", score: 30 });
 	}
 	if (
 		tofuBlock?.cookedStateString === "burnt" ||
 		tofuCubes?.cookedStateString === "burnt"
 	) {
 		score -= 30;
+		scoreParts.push({ name: "Tofu burnt", score: -30 });
 	}
 	// Cashews cooked are worth 30 points
 	// Cashews burnt are worth -30 points
 	const cashews = findThingInGame("cashews") as Cashews;
 	if (cashews.cookedStateString === "cooked") {
 		score += 30;
+		scoreParts.push({ name: "Cashews cooked", score: 30 });
 	}
 	if (cashews.cookedStateString === "burnt") {
 		score -= 30;
+		scoreParts.push({ name: "Cashews burnt", score: -30 });
 	}
 	// Ginger pickled is worth 30 points
 	const ginger = findThingInGame("fresh ginger") as Ginger;
 	if (ginger.hasProperty("pickled")) {
 		score += 30;
+		scoreParts.push({ name: "Ginger pickled", score: 30 });
 	}
 	// Sambal on platter is worth 15 points
 	const sambal = findThingInGame("sambal sauce") as SambalSauce;
 	if (sambal.containedBy?.name === "platter") {
 		score += 15;
+		scoreParts.push({ name: "Sambal on platter", score: 15 });
 	}
 	// Tofu on platter is worth 15 points
 	if (
@@ -960,19 +992,23 @@ const calculateScore = () => {
 		tofuCubes?.containedBy?.name === "platter"
 	) {
 		score += 15;
+		scoreParts.push({ name: "Tofu on platter", score: 15 });
 	}
 	// Cashews on platter is worth 15 points
 	if (cashews?.containedBy?.name === "platter") {
 		score += 15;
+		scoreParts.push({ name: "Cashews on platter", score: 15 });
 	}
 	// Ginger on platter is worth 15 points
 	if (ginger?.containedBy?.name === "platter") {
 		score += 15;
+		scoreParts.push({ name: "Ginger on platter", score: 15 });
 	}
 
 	return {
 		score: score,
 		maxScore: maxScore,
+		scoreParts: scoreParts,
 	};
 };
 
@@ -980,32 +1016,25 @@ export const parse = (input = "", say: (output: string) => void) => {
 	const [command, ...args] = input.split(" ");
 	state.say = say;
 
-	calculateScore();
-
 	if (state.gameOver) {
 		state.say("The game is over. You've had your fun, now let me nap.");
 		return;
 	}
 
-	const timeLimit = 90;
-	if (state.time > timeLimit) {
-		state.say(
-			"It's 6pm, and your date is due to arrive! Let's see how you did...",
-		);
-		const { score, maxScore } = calculateScore();
-		state.say(`You scored ${score} out of ${maxScore} points.`);
-		state.gameOver = true;
-	}
-
 	switch (command) {
 		case "help":
-			say("There is no helping you.");
+			say(
+				`Available commands are: look, time, examine, go, take, drop, buy, remove, wait, inventory, ${
+					verbs.join(", ")
+				}.`,
+			);
 			break;
 		case "time":
 			say(printTime());
 			break;
 		case "look":
 			if (args.length === 0) {
+				say(state.currentRoom?.name);
 				state.currentRoom?.describe();
 				tick();
 			} else if (args[0] === "at") {
@@ -1051,7 +1080,7 @@ export const parse = (input = "", say: (output: string) => void) => {
 			break;
 		}
 		case "go": {
-			const direction = args.join(" ");
+			const direction = args.filter((arg) => arg !== "to").join(" ");
 			if (direction) {
 				const newRoom = state.currentRoom?.exits.find((exit) =>
 					exit.toLowerCase().includes(direction.toLowerCase())
@@ -1211,5 +1240,31 @@ export const parse = (input = "", say: (output: string) => void) => {
 				say("You can't do that.");
 			}
 		}
+	}
+	if (state.time >= state.timeLimit && !state.gameOver) {
+		state.say(
+			"It's 6pm, and your date is due to arrive! Let's see how you did...",
+		);
+		const { score, maxScore, scoreParts } = calculateScore();
+		state.say(`You scored ${score} out of ${maxScore} points.`);
+		if (score >= maxScore * 0.8) {
+			state.say(
+				"Your date was hugely impressed. Even Ottolenghi would be proud of your cooking skills. In fact, your date is so impressed that next time they come round, they invite Ottolenghi to join you. You all have the greatest dinner party of all time. It goes down in the annals of history. Tragically, your date and Ottolenghi then get together, but they seem really happy, so you can't get too mad about it.",
+			);
+		} else if (score >= maxScore * 0.5) {
+			state.say(
+				"The recipe didn't quite go to plan. Perhaps you were too ambitious. Next time, your date specifically asks you to let them cook instead. It turns out they're much better at it than you are, and you have a lovely evening together. The thought of what could have been slowly eats away at you, but you try not to think about it too much. You're happy for them, really.",
+			);
+		} else {
+			state.say(
+				"'Well,' says your date after two forkfuls. 'Astonishingly, that's actually the worst thing I've ever eaten'. You try to explain that it's not your fault, but they're already out the door. You're left alone with the remains of your truly disastrous meal, and a deep sense of shame. You never cook again.",
+			);
+		}
+		state.say("Score breakdown:");
+		for (const { name, score } of scoreParts) {
+			state.say(`${name}: ${score}`);
+		}
+		state.gameOver = true;
+		return;
 	}
 };

@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
 import Form from "../components/Form.tsx";
-import { parse, state } from "../lib/game.ts";
+import { parse, state, printTime } from "../lib/game.ts";
 import { useEffect, useRef } from "preact/hooks";
 
 interface Message {
@@ -25,7 +25,11 @@ const onSubmit = (text: string) => {
 	parse(text, say);
 };
 
-export default function Game() {
+interface GameProps {
+	setShowRecipe: (showRecipe: boolean) => void;
+}
+
+export default function Game({ setShowRecipe }: GameProps) {
 	const outputBoxRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -55,11 +59,17 @@ export default function Game() {
 							${line.player ? "text-white" : "text-gray-300"} py-2	
 						`}
 					>
-						{`${line.player ? "> " : ""}${line.text}`}
+						{`${line.player ? `${printTime()} > ` : ""}${line.text}`}
 					</p>
 				);
 			})}
 			<Form onSubmit={onSubmit} />
+			<button
+				className="text-mono px-4 py-2 ml-2 text-white rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 my-4 lg:hidden"
+				onClick={() => setShowRecipe(true)}
+			>
+				Show Recipe
+			</button>
 		</div>
 	);
 }

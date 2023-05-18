@@ -4,11 +4,34 @@ const h3 = "text-base font-bold tracking-tight py-2";
 const h4 = "text-sm font-bold tracking-tight py-2";
 const p = "text-xs tracking-tight py-1";
 
-export default function Recipe() {
+interface RecipeProps {
+	setShowRecipe: (showRecipe: boolean) => void;
+}
+
+export default function Recipe({ setShowRecipe }: RecipeProps) {
 	return (
 		<div class="font-mono flex flex-col w-full h-full overflow-y-auto px-4 py-2 border border-gray-600 rounded-lg bg-gray-900 text-gray-300">
 			<h1 class={h1}>Recipe</h1>
-			<h2 class={h2}>Tofu in spicy sambal with cashews and ginger pickle</h2>
+			<h2 class={h2}>
+				<a
+					class="underline"
+					href="https://www.theguardian.com/food/2021/may/22/yotam-ottolenghi-tofu-recipes-spicy-sambal-beer-battered-coconut-flan-coffee-caramel"
+					target="_blank"
+				>
+					Tofu in spicy sambal with cashews and ginger pickle
+				</a>
+			</h2>
+			<a
+				class="self-center"
+				href="https://www.theguardian.com/food/2021/may/22/yotam-ottolenghi-tofu-recipes-spicy-sambal-beer-battered-coconut-flan-coffee-caramel"
+				target="_blank"
+			>
+				<img
+					class="self-center w-48 rounded-lg"
+					src="https://i.guim.co.uk/img/media/dfb4e9c1fe7dc5c28d80b8511a459578a610e505/0_0_3630_4266/master/3630.jpg?width=300&quality=45&dpr=2&s=none"
+					alt="Picture of the 'tofu in spicy sambal with cashews and ginger pickle' dish"
+				/>
+			</a>
 			<h3 class={h3}>Ingredients</h3>
 			<h4 class={h4}>For the tofu</h4>
 			<ul>
@@ -57,6 +80,12 @@ export default function Recipe() {
 					top.
 				</li>
 			</ol>
+			<button
+				className="text-mono px-4 py-2 ml-2 text-white rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 my-4 lg:hidden"
+				onClick={() => setShowRecipe(false)}
+			>
+				Show Game
+			</button>
 		</div>
 	);
 }
