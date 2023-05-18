@@ -18,8 +18,8 @@ export default function Form({ onSubmit }: FormProps) {
 		>
 			<input
 				type="text"
-				value={inputText}
-				onInput={(e) => setInputText(e.currentTarget.value)}
+				value={inputText.toLocaleLowerCase()}
+				onInput={(e) => setInputText(e.currentTarget.value.toLowerCase())}
 				className="flex-grow bg-transparent focus:outline-none text-white border-b border-gray-700"
 				placeholder={"What do you do?"}
 			/>
