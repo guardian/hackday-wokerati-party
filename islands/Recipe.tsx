@@ -49,7 +49,7 @@ export default function Recipe({ setShowRecipe }: RecipeProps) {
 					ground turmeric, tomato paste, maple syrup, water
 				</p>
 				<p class={`text-base font-bold tracking-tight py-1`}>
-					NOTE: Buy sambal sauce from store
+					Note: Buy sambal sauce from the store
 				</p>
 			</ul>
 			<h3 class={h3}>Directions</h3>
@@ -84,7 +84,7 @@ export default function Recipe({ setShowRecipe }: RecipeProps) {
 				className="text-mono px-4 py-2 ml-2 text-white rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 my-4 lg:hidden"
 				onClick={() => setShowRecipe(false)}
 			>
-				Show Game
+				Return to Game
 			</button>
 		</div>
 	);

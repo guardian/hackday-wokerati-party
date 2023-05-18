@@ -369,6 +369,14 @@ export const parse = (input = "", say: (output: string) => void) => {
 			console.log(state);
 			say(JSON.stringify(state, null, 2));
 			break;
+		case "kill":
+			if (args[0] === "jester") {
+				say("Jingle is dead. Game over.");
+				state.gameOver = true;
+			} else {
+				say("You can't kill that.");
+			}
+			break;
 		default: {
 			// If the command isn't a built-in command, check if it's a usage
 			// Usage syntax is: <verb> <subject> [in|from <object>]
@@ -376,6 +384,19 @@ export const parse = (input = "", say: (output: string) => void) => {
 			// The subject and object can be any number of words
 			const { verb, subject, object } = parseUsage(input);
 			console.log({ verb, subject, object });
+
+			// Is this a valid verb?
+			const verbExists = verbs.find((v) => v === verb);
+			if (!verbExists) {
+				say(`I don't know how to do that.`);
+				break;
+			}
+
+			// Is there a subject?
+			if (!subject) {
+				say(`What do you want to ${verb}?`);
+				break;
+			}
 
 			// Is there a thing in our inventory that matches the subject?
 			const thingInInventory = state.inventory.find((thing) =>
@@ -411,21 +432,6 @@ export const parse = (input = "", say: (output: string) => void) => {
 				}
 				break;
 			} else {
-				// // If the thing isn't in our inventory, is it in the current room?
-				// const thingInRoom = state.currentRoom?.findThing(subject);
-				// console.log("thingInRoom", thingInRoom);
-				// if (thingInRoom) {
-				// 	// Is the thing stationary?
-				// 	if (thingInRoom.stationary) {
-				// 		// Cheat: move the thing to the inventory, use it, then move it back
-				// 		state.inventory.push(thingInRoom);
-				// 		thingInRoom.use(verb);
-				// 		state.inventory.pop();
-				// 	} else {
-				// 		say("You aren't carrying that.");
-				// 	}
-				// 	break;
-				// }
 				say("You can't do that.");
 			}
 		}

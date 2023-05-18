@@ -14,6 +14,7 @@ export interface Thing {
 	cookedState: CookedState;
 	cookedFor: number;
 	purchaseable: boolean;
+	allowedVerbs: Verb[];
 }
 
 type ThingName =
@@ -56,6 +57,7 @@ export class Thing {
 		this.cookedFor = 0;
 		this.container = false;
 		this.purchaseable = purchaseable;
+		this.allowedVerbs = ["put", "remove"];
 	}
 
 	get cookedStateString(): CookedState | null {
@@ -232,14 +234,24 @@ export class Thing {
 	}
 
 	use(verb: Verb, object?: Thing): boolean | void {
+		if (this.allowedVerbs?.includes(verb) === false) {
+			state.say(`You can't ${verb} the ${this.name}.`);
+			return true;
+		}
 		switch (verb) {
 			case "put":
 				if (object) {
 					this.putIn(object);
+				} else {
+					state.say(`Put the ${this.name} in what?`);
 				}
 				return true;
 			case "remove":
-				this.removeFromCurrentContainer();
+				if (this.containedBy) {
+					this.removeFromCurrentContainer();
+				} else {
+					state.say(`The ${this.name} isn't inside anything.`);
+				}
 				return true;
 			default:
 				return false;
@@ -296,6 +308,7 @@ export class TofuBlock extends CookableThing {
 			cooked: 30,
 			burnt: 60,
 		};
+		this.allowedVerbs = ["put", "remove", "eat", "dry", "cut"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -322,8 +335,6 @@ export class TofuBlock extends CookableThing {
 				state.inventory[state.inventory.length - 1].properties =
 					this.properties;
 				break;
-			default:
-				state.say("You can't do that with the tofu.");
 		}
 	}
 
@@ -359,6 +370,7 @@ export class TofuCubes extends CookableThing {
 			burnt: 40,
 		};
 		this.marinatedFor = 0;
+		this.allowedVerbs = ["put", "remove", "eat"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -373,8 +385,6 @@ export class TofuCubes extends CookableThing {
 				);
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the tofu cubes.");
 		}
 	}
 
@@ -398,6 +408,7 @@ export class TofuCubes extends CookableThing {
 export class GarlicCloves extends Thing {
 	constructor(purchaseable: boolean) {
 		super("some", "garlic cloves", "They have a powerful aroma.", purchaseable);
+		this.allowedVerbs = ["put", "remove", "eat"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -410,8 +421,6 @@ export class GarlicCloves extends Thing {
 				state.say("Why did you do that?");
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the garlic cloves.");
 		}
 	}
 }
@@ -441,6 +450,7 @@ export class PicklingBowl extends Thing {
 export class SoySauce extends Thing {
 	constructor() {
 		super("some", "soy sauce", "Salty.");
+		this.allowedVerbs = ["put", "remove", "drink"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -449,12 +459,12 @@ export class SoySauce extends Thing {
 			return;
 		}
 		switch (verb) {
-			case "eat":
-				state.say("You drink the soy sauce. It's salty.");
+			case "drink":
+				state.say(
+					"You drink the soy sauce. It's the saltiest thing you've ever ingested. You feel slightly nauseous.",
+				);
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the soy sauce.");
 		}
 	}
 }
@@ -462,6 +472,7 @@ export class SoySauce extends Thing {
 export class LimeJuice extends Thing {
 	constructor() {
 		super("some", "lime juice", "It's sour.");
+		this.allowedVerbs = ["put", "remove", "drink"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -474,8 +485,6 @@ export class LimeJuice extends Thing {
 				state.say("You're a weirdo, you know that?");
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the lime juice.");
 		}
 	}
 }
@@ -491,6 +500,7 @@ export class Ginger extends Thing {
 			purchaseable,
 		);
 		this.pickledFor = 0;
+		this.allowedVerbs = ["put", "remove", "eat"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -503,8 +513,6 @@ export class Ginger extends Thing {
 				state.say("Why did you do that?");
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the ginger.");
 		}
 	}
 
@@ -531,6 +539,7 @@ export class Ginger extends Thing {
 export class Vinegar extends Thing {
 	constructor() {
 		super("some", "red wine vinegar", "It's extremely sour and very organic.");
+		this.allowedVerbs = ["put", "remove", "drink"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -543,8 +552,6 @@ export class Vinegar extends Thing {
 				state.say("You drink the vinegar, you weirdo.");
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the vinegar.");
 		}
 	}
 }
@@ -556,6 +563,7 @@ export class MapleSyrup extends Thing {
 			"maple syrup",
 			"It glistens invitingly in its dinky bottle. 'I'm delicious and made solely of naturally occurring sugars,' it whispers. 'Drink me with a straw!'.",
 		);
+		this.allowedVerbs = ["put", "remove", "drink"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -568,8 +576,6 @@ export class MapleSyrup extends Thing {
 				state.say("You drink the maple syrup. It's distressingly sweet.");
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the maple syrup.");
 		}
 	}
 }
@@ -583,6 +589,7 @@ export class Cashews extends CookableThing {
 			cooked: 12,
 			burnt: 18,
 		};
+		this.allowedVerbs = ["put", "remove", "eat"];
 	}
 
 	use(verb: Verb, object?: Thing) {
@@ -597,8 +604,6 @@ export class Cashews extends CookableThing {
 				);
 				this.removeFromGame();
 				break;
-			default:
-				state.say("You can't do that with the cashews.");
 		}
 	}
 }
@@ -618,6 +623,7 @@ export class Oven extends Thing {
 		this.on = false;
 		this.stationary = true;
 		this.container = true;
+		this.allowedVerbs = ["put", "remove", "turn on", "turn off", "eat"];
 	}
 
 	getFullName(): string {
@@ -674,6 +680,20 @@ export class SambalSauce extends Thing {
 			"It's got an illustration of a goose bursting into flames while fighting a dragon also bursting into flames on the label. That probably means it's hot.",
 			purchaseable,
 		);
+		this.allowedVerbs = ["put", "remove", "eat"];
+	}
+
+	use(verb: Verb, object?: Thing) {
+		const used = super.use(verb, object);
+		if (used) {
+			return;
+		}
+		switch (verb) {
+			case "eat":
+				state.say("AUGHHHHHHHHHHHHHHH");
+				this.removeFromGame();
+				break;
+		}
 	}
 }
 

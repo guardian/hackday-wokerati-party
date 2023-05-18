@@ -22,8 +22,16 @@ const say = (text: string) => {
 };
 
 const onSubmit = (text: string) => {
-	add({ player: true, text: text });
+	add({ player: true, text: `[time] > ${text}` });
 	parse(text, say);
+
+	const lastPlayerIndex = output.value.findLastIndex(
+		(line) => line.player === true
+	);
+
+	if (lastPlayerIndex !== -1) {
+		output.value[lastPlayerIndex].text = `[${printTime()}] > ${text}`;
+	}
 };
 
 interface GameProps {
@@ -56,7 +64,7 @@ export default function Game({ setShowRecipe }: GameProps) {
 				if (index === 0) {
 					return (
 						<h1
-							className={"text-2xl font-bold tracking-tight text-gray-300 py-2"}
+							className={"text-3xl font-bold tracking-tight text-gray-300 py-2"}
 						>{`${line.text}`}</h1>
 					);
 				}
@@ -67,7 +75,7 @@ export default function Game({ setShowRecipe }: GameProps) {
 							${line.player ? "text-white font-semibold" : "text-gray-300"} py-2	
 						`}
 					>
-						{`${line.player ? `${printTime()} > ` : ""}${line.text}`}
+						{line.text}
 					</p>
 				);
 			})}
@@ -76,7 +84,7 @@ export default function Game({ setShowRecipe }: GameProps) {
 				className="text-mono px-4 py-2 ml-2 text-white rounded-md bg-gray-700 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 my-4 lg:hidden"
 				onClick={() => setShowRecipe(true)}
 			>
-				Show Recipe
+				Read Recipe
 			</button>
 		</div>
 	);

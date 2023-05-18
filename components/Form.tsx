@@ -12,6 +12,9 @@ export default function Form({ onSubmit, inputFieldRef }: FormProps) {
 		<form
 			onSubmit={(e) => {
 				e.preventDefault();
+				if (inputText === "") {
+					return;
+				}
 				onSubmit(inputText);
 				setInputText("");
 				if (inputFieldRef.current) {
